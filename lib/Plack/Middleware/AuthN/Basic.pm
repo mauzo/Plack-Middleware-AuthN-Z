@@ -1,64 +1,35 @@
 package Plack::Middleware::AuthN::Basic;
+
+use warnings;
 use strict;
+
 use parent qw(Plack::Middleware::AuthN);
+
+our $VERSION = "1";
+
 use Plack::Util::Accessor qw( realm authenticator );
 use Scalar::Util;
 use MIME::Base64;
 
-sub prepare_app {
-    my $self = shift;
-
-    my $auth = $self->authenticator or die 'authenticator is not set';
-    if (Scalar::Util::blessed($auth) && $auth->can('authenticate')) {
-        $self->authenticator(sub { $auth->authenticate(@_[0,1]) }); # because Authen::Simple barfs on 3 params
-    } elsif (ref $auth ne 'CODE') {
-        die 'authenticator should be a code reference or an object that responds to authenticate()';
-    }
-
-    $self->SUPER::prepare_app;
-}
-
-sub http_auth_type { "Basic" }
-
-sub do_http_auth {
-    my ($self, $env, $b64) = @_;
-
-    my($user, $pass) = split /:/, (MIME::Base64::decode($b64) || ":");
-    $pass = '' unless defined $pass;
-    if ($self->authenticator->($user, $pass, $env)) {
-        return $user;
-    }
-
-    return;
-}
-
-sub http_auth_challenge {
-    my $self = shift;
-    return 'realm="' . ($self->realm || "restricted area") . '"';
-}
-
-1;
-
-__END__
-
 =head1 NAME
 
-Plack::Middleware::Auth::Basic - Simple basic authentication middleware
+Plack::Middleware::AuthN::Basic - Stackable Basic authentication
 
 =head1 SYNOPSIS
 
   use Plack::Builder;
-  my $app = sub { ... };
 
-  builder {
-      enable "Auth::Basic", authenticator => \&authen_cb;
-      $app;
-  };
+    my $app     = sub { ... };
+    my $do_auth = sub {
+        my ($user, $passwd) = @_;
+        ...
+    };
 
-  sub authen_cb {
-      my($username, $password) = @_;
-      return $username eq 'admin' && $password eq 's3cr3t';
-  }
+    builder {
+        enable "AuthN::Basic", authenticator => $do_auth;
+        enable "AuthZ::RequireUser";
+        $app;
+    };
 
 =head1 DESCRIPTION
 
@@ -86,6 +57,44 @@ Realm name to display in the basic authentication dialog. Defaults to I<restrict
 
 =back
 
+=cut
+
+sub prepare_app {
+    my ($self) = @_;
+    my $auth = $self->authenticator or die 'authenticator is not set';
+
+    if (Scalar::Util::blessed($auth) && $auth->can('authenticate')) {
+        # because Authen::Simple barfs on 3 params
+        $self->authenticator(sub { $auth->authenticate(@_[0,1]) });
+    } elsif (ref $auth ne 'CODE') {
+        die "authenticator should be a code reference " .
+            "or an object that responds to authenticate()";
+    }
+
+    $self->SUPER::prepare_app;
+}
+
+sub http_auth_type { "Basic" }
+
+sub do_http_auth {
+    my ($self, $env, $b64) = @_;
+
+    my($user, $pass) = split /:/, (MIME::Base64::decode($b64) || ":");
+    $pass = '' unless defined $pass;
+    if ($self->authenticator->($user, $pass, $env)) {
+        return $user;
+    }
+
+    return;
+}
+
+sub http_auth_challenge {
+    my $self = shift;
+    return 'realm="' . ($self->realm || "restricted area") . '"';
+}
+
+1;
+
 =head1 LIMITATIONS
 
 This middleware expects that the application has a full access to the
@@ -109,10 +118,13 @@ like following.
 
 =head1 AUTHOR
 
-Tatsuhiko Miyagawa
+Copyright 2011 Ben Morrow <ben@morrow.me.uk>.
+
+Based on Plack::Middleware::Auth::Basic by Tatsuhiko Miyagawa.
 
 =head1 SEE ALSO
 
-L<Plack>
+L<Plack>, L<Plack::Middleware::AuthN>, L<Plack::Middleware::AuthZ>,
+L<Plack::Middleware::Auth::Basic>.
 
 =cut

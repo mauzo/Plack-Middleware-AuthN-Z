@@ -3,3 +3,5 @@ lib/Plack/Middleware/AuthN.pm
 lib/Plack/Middleware/AuthN/Basic.pm
 lib/Plack/Middleware/AuthZ/RequireUser.pm
 MANIFEST			This list of files
+META.yml
+META.json

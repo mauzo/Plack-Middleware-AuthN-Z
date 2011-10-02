@@ -6,6 +6,10 @@ Module::Build->new(
     license         => "bsd",
     requires        => {
         "Plack"             => 0,
+
+        # AuthN::Basic
+        "Scalar::Util"      => 0,
+        "MIME::Base64"      => 0,
     },
     build_requires  => {
         "Test::More"        => "0.65",
