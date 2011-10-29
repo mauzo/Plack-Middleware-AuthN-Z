@@ -16,5 +16,8 @@ Module::Build->new(
         # AuthN::Basic
         "Scalar::Util"      => 0,
         "MIME::Base64"      => 0,
+
+        # AuthZ
+        "namespace::clean"  => 0,
     },
 )->create_build_script;
