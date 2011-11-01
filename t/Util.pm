@@ -18,7 +18,7 @@ our @EXPORT = (
     @Plack::Test::EXPORT,
     @Plack::Builder::EXPORT,
     @HTTP::Request::Common::EXPORT,
-    qw( %t APP wrap_SET authn_cb check_authn ),
+    qw( %t APP SET authn_cb authn_calls cbGET check_authn ),
 );
 
 sub import {
@@ -30,16 +30,16 @@ sub import {
 our %t;
 
 sub APP {
-    my (undef, $status, @vars) = split m!/!, $_[0]{PATH_INFO};
-    local $" = ":";
-    note "APP: [$status], [@vars]";
+    my (undef, $status, $var, $hdr) = split m!/!, $_[0]{PATH_INFO};
+    note "APP: " . join ", ", map "[$_]", grep defined, $status, $var, $hdr;
+    my @hdr = $hdr ? (split /=/, $hdr) : ();
     return [$status,
-        ["Content-type" => "text/plain"],
-        [join "\0", @{$_[0]}{@vars}],
+        ["Content-type" => "text/plain", @hdr],
+        [$_[0]{$var}],
     ];
 }
 
-sub wrap_SET {
+sub SET {
     my ($app) = @_;
     sub {
         my ($env) = @_;
@@ -52,26 +52,53 @@ sub wrap_SET {
 
 {
     my $cb;
-    my @calls = qw/auth challenge cleanup/;
 
     sub authn_cb { ($cb) = @_ }
 
-    sub check_authn {
-        my ($path, $hdrs, $code, $call, $content, $name) = @_;
+    sub cbGET {
+        my ($path, @hdrs) = @_;
+        $cb->(GET "http://localhost/$path", @hdrs);
+    }
+}
 
-        my $res     = $cb->(GET "http://localhost/$path", @$hdrs);
+{
+    my %calls;
+    sub authn_calls { %calls = @_ }
+
+    sub check_authn {
+        my ($path, $hdrs, $code, $call, $rsph, $content, $name) = @_;
+
+        my $res     = cbGET $path, @$hdrs;
         my %call    = map +($_, 1), split / /, $call;
 
-        is $res->code,  $code,      "$name has correct status code";
-        for (@calls) {
+        is $res->code,  $code,          "$name has correct status code";
+        for (keys %calls) {
             if ($call{$_}) {
-                is $t{$_}, 1,       "$name does call $_";
+                is $t{$_}, $calls{$_},  "$name does $_";
             }
             else {
-                is $t{$_}, undef,   "$name doesn't call $_";
+                is $t{$_}, undef,       "$name doesn't $_";
             }
         }
-        is $res->content, $content, "$name has correct content";
+        my @rsph = @$rsph;  # copy, since we trash the original
+        while (@rsph) {
+            my ($h, $want) = (shift @rsph, shift @rsph);
+            my @got = $res->header($h);
+            my $got = "GOT: " . ( 
+                @got ? (join "", map "\n  $_", @got)
+                    : "(no $h headers)"
+            );
+            if (defined $want) {
+                ok grep($_ eq $want, @got), 
+                                        "$name has $h: $want"
+                    or diag $got;
+            }
+            else {
+                ok !@got,               "$name has no $h headers"
+                    or diag $got;
+            }
+        }
+        is $res->content, $content,     "$name has correct content";
     }
 }
 
