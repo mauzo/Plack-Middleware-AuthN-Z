@@ -55,7 +55,7 @@ for (
     ["Basic *%&^",          0,  "bad base64"            ],
     ["Basic *&$b64",        0,  "bad-then-good b64"     ],
     ["Basic $b64*&",        0,  "good-then-bad b64"     ],
-    ["Basic $b64=",         0,  "b64 with trailing ="   ],
+    ["Basic $b64=",         1,  "b64 with trailing ="   ],
     ["Basic Y*m9iOmJsb2I",  0,  "b64 with bad chars"    ],
     ["Basic Ym9i",          0,  "b64 with no :"         ],
 ) {
@@ -83,14 +83,10 @@ for (
 
     my $name = join ", ", $status, $aname, $rlname, $acname, $rsname;
 
-    TODO: {
-        local $TODO = "bad base64" if $aname =~ /b(?:ase)?64/;
-
-        %t = (result => $result);
-        check_authn "$status/REMOTE_USER", \@auth,
-            $status, $call, $rsph, $user,
-            $name;
-    }
+    %t = (result => $result);
+    check_authn "$status/REMOTE_USER", \@auth,
+        $status, $call, $rsph, $user,
+        $name;
 
 } } } }; } }
 

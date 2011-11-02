@@ -9,7 +9,6 @@ our $VERSION = "1";
 
 use Plack::Util::Accessor qw( realm authenticator );
 use Scalar::Util;
-use MIME::Base64;
 
 =head1 NAME
 
@@ -78,9 +77,14 @@ sub http_auth_type { "Basic" }
 
 sub do_http_auth {
     my ($self, $env, $b64) = @_;
+    
+    my $data = $self->_b64($b64) or return;
 
-    my($user, $pass) = split /:/, (MIME::Base64::decode($b64) || ":");
-    $pass = '' unless defined $pass;
+    # XXX should we be pickier about characters allowed in username and
+    # password?
+    my ($user, $pass) = $data =~ /([^:]*):(.*)/s
+        or return;
+
     if ($self->authenticator->($user, $pass, $env)) {
         return $user;
     }

@@ -9,6 +9,7 @@ use parent qw(Plack::Middleware);
 
 use Plack::Util;
 use Scalar::Util;
+use MIME::Base64;
 
 =head1 NAME
 
@@ -79,6 +80,27 @@ sub do_auth {
     }
 
     return $user;
+}
+
+=item C<< $self->_b64($base64) >>
+
+Most HTTP authentication schemes use the Base64 encoding. While
+MIME::Base64 can be used to decode base64 data, it is more liberal than
+is really desirable for an authentication module. Subclasses can call
+C<< ->_b64 >> to safely verify and decode base64 data. This method
+allows but does not require trailing C<=> padding, and ignores leading
+and trailing whitespace, but otherwise requires strict base64 data.
+
+=cut
+
+sub _b64 {
+    my ($self, $text) = @_;
+    my ($b64) = $text =~ m[
+        ^ [ \t]*
+        ([A-Za-z0-9+/]+) ={0,2}
+        [ \t]* \z
+    ]x or return;
+    MIME::Base64::decode_base64 $b64;
 }
 
 sub challenge {
