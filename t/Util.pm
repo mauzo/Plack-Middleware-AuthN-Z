@@ -18,7 +18,7 @@ our @EXPORT = (
     @Plack::Test::EXPORT,
     @Plack::Builder::EXPORT,
     @HTTP::Request::Common::EXPORT,
-    qw( %t APP SET authn_cb authn_calls cbGET check_authn ),
+    qw( *TODO %t APP SET authn_cb authn_calls cbGET check_authn ),
 );
 
 sub import {
