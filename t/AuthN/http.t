@@ -21,8 +21,8 @@ use URI::Escape qw/uri_escape/;
     };
 
     test_psgi app => $app, client => sub {
-        authn_cb $_[0];
-        authn_calls (
+        auth_cb $_[0];
+        auth_calls (
             auth        => 1,
             challenge   => 1,
             authheader  => "blib",
@@ -75,7 +75,7 @@ use URI::Escape qw/uri_escape/;
             @wwwa = map +("WWW-Authenticate", $_), @wwwa;
 
             %t = (@bob, SET => {@$set, TO_HTTP_AUTH => "blub"});
-            check_authn 
+            check_auth 
                 "$status/REMOTE_USER$rsph", \@auth,
                 $status, $call, \@wwwa, $user,
                 $name;

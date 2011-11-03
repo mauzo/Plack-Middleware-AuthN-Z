@@ -12,36 +12,36 @@ use t::Util;
         );
         \&APP;
     };
-    authn_calls auth => 1, cleanup => 1, challenge => 1;
+    auth_calls auth => 1, cleanup => 1, challenge => 1;
 
     test_psgi app => $app, client => sub {
-        authn_cb $_[0];
+        auth_cb $_[0];
 
         my @bob  = (user => "bob");
         my @bill = (user => "bob", SET => {REMOTE_USER => "bill"});
 
         %t = @bob;
-        check_authn "200/REMOTE_USER", [], 
+        check_auth "200/REMOTE_USER", [], 
             200, "auth cleanup", [], "bob",
             "200";
 
         %t = @bob;
-        check_authn "401/REMOTE_USER", [],
+        check_auth "401/REMOTE_USER", [],
             401, "auth challenge", [], "bob",
             "401";
 
         %t = @bob;
-        check_authn "302/REMOTE_USER", [],
+        check_auth "302/REMOTE_USER", [],
             302, "auth cleanup", [], "bob",
             "302";
 
         %t = @bill;
-        check_authn "200/REMOTE_USER", [],
+        check_auth "200/REMOTE_USER", [],
             200, "", [], "bill",
             "200 with REMOTE_USER";
 
         %t = @bill;
-        check_authn "401/REMOTE_USER", [],
+        check_auth "401/REMOTE_USER", [],
             401, "challenge", [], "bill",
             "401 with REMOTE_USER";
     };
@@ -94,33 +94,33 @@ use t::Util;
     );
 
     test_psgi app => $app, client => sub {
-        authn_cb $_[0];
+        auth_cb $_[0];
         my @tofrom = (
             (map +($_, $_), qw/fromauth fromclean fromchal/),
             SET => { TO_AUTH => "toauth" },
         );
 
         %t = @tofrom;
-        my $res = cbGET "200/FROM_AUTH/To-Cleanup=toclean";
+        my $res = auth_GET "200/FROM_AUTH/To-Cleanup=toclean";
 
         $phases{auth}       ->($res, "200");
         $phases{cleanup}    ->($res, "200");
 
         %t = @tofrom;
-        $res = cbGET "401/FROM_AUTH/To-Challenge=tochal";
+        $res = auth_GET "401/FROM_AUTH/To-Challenge=tochal";
 
         $phases{auth}       ->($res, "401");
         $phases{challenge}  ->($res, "401");
 
         %t = @tofrom;
-        $res = cbGET "302/FROM_AUTH/To-Cleanup=toclean";
+        $res = auth_GET "302/FROM_AUTH/To-Cleanup=toclean";
 
         $phases{auth}       ->($res, "302");
         $phases{cleanup}    ->($res, "302");
 
         %t = @tofrom;
         $t{SET}{REMOTE_USER} = "bill";
-        $res = cbGET "401/x/To-Challenge=tochal";
+        $res = auth_GET "401/x/To-Challenge=tochal";
 
         $phases{challenge}  ->($res, "401 with REMOTE_USER");
     };

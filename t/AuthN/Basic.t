@@ -40,8 +40,8 @@ for (
     $realm ||= "restricted area";
 
     test_psgi app => $app, client => sub {
-        authn_cb $_[0];
-        authn_calls (
+        auth_cb $_[0];
+        auth_calls (
             cb      => 1,
             user    => "bob",
             passwd  => "blob",
@@ -84,7 +84,7 @@ for (
     my $name = join ", ", $status, $aname, $rlname, $acname, $rsname;
 
     %t = (result => $result);
-    check_authn "$status/REMOTE_USER", \@auth,
+    check_auth "$status/REMOTE_USER", \@auth,
         $status, $call, $rsph, $user,
         $name;
 

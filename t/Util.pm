@@ -18,7 +18,7 @@ our @EXPORT = (
     @Plack::Test::EXPORT,
     @Plack::Builder::EXPORT,
     @HTTP::Request::Common::EXPORT,
-    qw( *TODO %t APP SET authn_cb authn_calls cbGET check_authn ),
+    qw( *TODO %t APP SET auth_cb auth_calls auth_GET check_auth ),
 );
 
 sub import {
@@ -35,7 +35,7 @@ sub APP {
     my @hdr = $hdr ? (split /=/, $hdr) : ();
     return [$status,
         ["Content-type" => "text/plain", @hdr],
-        [$_[0]{$var}],
+        [$var ? $_[0]{$var} : ""],
     ];
 }
 
@@ -53,9 +53,9 @@ sub SET {
 {
     my $cb;
 
-    sub authn_cb { ($cb) = @_ }
+    sub auth_cb { ($cb) = @_ }
 
-    sub cbGET {
+    sub auth_GET {
         my ($path, @hdrs) = @_;
         $cb->(GET "http://localhost/$path", @hdrs);
     }
@@ -63,12 +63,12 @@ sub SET {
 
 {
     my %calls;
-    sub authn_calls { %calls = @_ }
+    sub auth_calls { %calls = @_ }
 
-    sub check_authn {
+    sub check_auth {
         my ($path, $hdrs, $code, $call, $rsph, $content, $name) = @_;
 
-        my $res     = cbGET $path, @$hdrs;
+        my $res     = auth_GET $path, @$hdrs;
         my %call    = map +($_, 1), split / /, $call;
 
         is $res->code,  $code,          "$name has correct status code";
