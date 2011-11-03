@@ -42,9 +42,9 @@ for (
     test_psgi app => $app, client => sub {
         auth_cb $_[0];
         auth_calls (
-            cb      => 1,
-            user    => "bob",
-            passwd  => "blob",
+            cb      => 1,       "call the callback",
+            user    => "bob",   "pass the user",
+            passwd  => "blob",  "pass the password",
         );
 
 my $b64 = "Ym9iOmJsb2I";

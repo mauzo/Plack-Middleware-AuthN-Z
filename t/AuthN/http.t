@@ -23,10 +23,10 @@ use URI::Escape qw/uri_escape/;
     test_psgi app => $app, client => sub {
         auth_cb $_[0];
         auth_calls (
-            auth        => 1,
-            challenge   => 1,
-            authheader  => "blib",
-            authenv     => "blub",
+            auth        => 1,       "call do_http_auth",
+            challenge   => 1,       "call http_challenge",
+            authheader  => "blib",  "see the Auth header value",
+            authenv     => "blub",  "see the PSGI env",
         );
 
         my @bob  = (user => "bob", wwwauth => "blob");

@@ -63,7 +63,12 @@ sub SET {
 
 {
     my %calls;
-    sub auth_calls { %calls = @_ }
+    sub auth_calls {
+        while (@_) {
+            my ($k, $v, $n) = splice @_, 0, 3;
+            $calls{$k} = [$v, $n];
+        }
+    }
 
     sub check_auth {
         my ($path, $hdrs, $code, $call, $rsph, $content, $name) = @_;
@@ -74,15 +79,15 @@ sub SET {
         is $res->code,  $code,          "$name has correct status code";
         for (keys %calls) {
             if ($call{$_}) {
-                is $t{$_}, $calls{$_},  "$name does $_";
+                is $t{$_}, $calls{$_}[0],  "$name does $calls{$_}[1]";
             }
             else {
-                is $t{$_}, undef,       "$name doesn't $_";
+                is $t{$_}, undef,       "$name doesn't $calls{$_}[1]";
             }
         }
         my @rsph = @$rsph;  # copy, since we trash the original
         while (@rsph) {
-            my ($h, $want) = (shift @rsph, shift @rsph);
+            my ($h, $want) = splice @rsph, 0, 2;
             my @got = $res->header($h);
             my $got = "GOT: " . ( 
                 @got ? (join "", map "\n  $_", @got)

@@ -12,7 +12,11 @@ use t::Util;
         );
         \&APP;
     };
-    auth_calls auth => 1, cleanup => 1, challenge => 1;
+    auth_calls (
+        auth        => 1,   "call do_auth", 
+        cleanup     => 1,   "call cleanup",
+        challenge   => 1,   "call challenge",
+    );
 
     test_psgi app => $app, client => sub {
         auth_cb $_[0];
